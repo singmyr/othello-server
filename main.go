@@ -9,10 +9,44 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// These are temporary.
+const (
+	playerConnected    = 1
+	playerDisconnected = 2
+	invalidMove        = 3
+	gameNotFound       = 4
+	move               = 5
+	gameUpdate         = 6
+	gameEnded          = 7
+	gameStart          = 8
+)
+
 var addr = flag.String("addr", "localhost:8080", "http service address")
 
 var upgrader = websocket.Upgrader{} // use default options
 
+// type socketEvent struct {
+// 	Event   byte
+// 	Payload []byte
+// }
+
+type playerConnectedEvent struct {
+	Name string
+}
+
+func parseEvent(body []byte) {
+	event := body[0]
+	payload := body[1:]
+
+	switch event {
+	case playerConnected:
+		fmt.Println(string(payload))
+	}
+}
+
+func createEvent(event byte, payload []byte) {}
+
+// func appendBytes(bytes ...[]byte)
 func echo(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -28,9 +62,19 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			log.Println("read:", err)
 			break
 		}
-		log.Printf("recv: %s", message)
-		fmt.Printf("%v", message)
-		err = c.WriteMessage(mt, message)
+		parseEvent(message)
+		// switch event.Event {
+		// case playerConnected:
+		// 	fmt.Println("Player connected!")
+		// }
+		// fmt.Printf("%# v", pretty.Formatter(event))
+		// log.Printf("recv: %s", message)
+		// fmt.Printf("%v", message)
+		// fmt.Printf("%v", string(message))
+		// Message structure:
+		// First byte should describe what event it is.
+		// Just integers.
+		err = c.WriteMessage(mt, append([]byte{1}, []byte("Ett svar")...))
 		if err != nil {
 			log.Println("write:", err)
 			break
