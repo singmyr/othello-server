@@ -2,57 +2,20 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 )
 
-// These are temporary.
-const (
-	playerConnected    = 1
-	playerDisconnected = 2
-	invalidMove        = 3
-	gameNotFound       = 4
-	move               = 5
-	gameUpdate         = 6
-	gameEnded          = 7
-	gameStart          = 8
-)
+var addr = flag.String("addr", "localhost:8008", "http service address")
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
+var upgrader = websocket.Upgrader{}
 
-var upgrader = websocket.Upgrader{} // use default options
-
-// type socketEvent struct {
-// 	Event   byte
-// 	Payload []byte
-// }
-
-type playerConnectedEvent struct {
-	Name string
-}
-
-func parseEvent(body []byte) {
-	event := body[0]
-	payload := body[1:]
-
-	switch event {
-	case playerConnected:
-		fmt.Println(string(payload))
-	}
-}
-
-func createEvent(event byte, payload []byte) {}
-
-// func appendBytes(bytes ...[]byte)
-func echo(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
-	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+func ping(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("upgrade:", err)
+		log.Println("Upgrade:", err)
 		return
 	}
 	defer c.Close()
@@ -62,19 +25,8 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			log.Println("read:", err)
 			break
 		}
-		parseEvent(message)
-		// switch event.Event {
-		// case playerConnected:
-		// 	fmt.Println("Player connected!")
-		// }
-		// fmt.Printf("%# v", pretty.Formatter(event))
-		// log.Printf("recv: %s", message)
-		// fmt.Printf("%v", message)
-		// fmt.Printf("%v", string(message))
-		// Message structure:
-		// First byte should describe what event it is.
-		// Just integers.
-		err = c.WriteMessage(mt, append([]byte{1}, []byte("Ett svar")...))
+		log.Printf("recv: %s", message)
+		err = c.WriteMessage(mt, message)
 		if err != nil {
 			log.Println("write:", err)
 			break
@@ -82,87 +34,9 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func home(w http.ResponseWriter, r *http.Request) {
-// 	homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
-// }
-
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-	http.HandleFunc("/echo", echo)
-	// http.HandleFunc("/", home)
+	http.HandleFunc("/ping", ping)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
-
-// var homeTemplate = template.Must(template.New("").Parse(`
-// <!DOCTYPE html>
-// <html>
-// <head>
-// <meta charset="utf-8">
-// <script>
-// window.addEventListener("load", function(evt) {
-//     var output = document.getElementById("output");
-//     var input = document.getElementById("input");
-//     var ws;
-//     var print = function(message) {
-//         var d = document.createElement("div");
-//         d.innerHTML = message;
-//         output.appendChild(d);
-//     };
-//     document.getElementById("open").onclick = function(evt) {
-//         if (ws) {
-//             return false;
-//         }
-//         ws = new WebSocket("{{.}}");
-//         ws.onopen = function(evt) {
-//             print("OPEN");
-//         }
-//         ws.onclose = function(evt) {
-//             print("CLOSE");
-//             ws = null;
-//         }
-//         ws.onmessage = function(evt) {
-//             print("RESPONSE: " + evt.data);
-//         }
-//         ws.onerror = function(evt) {
-//             print("ERROR: " + evt.data);
-//         }
-//         return false;
-//     };
-//     document.getElementById("send").onclick = function(evt) {
-//         if (!ws) {
-//             return false;
-//         }
-//         print("SEND: " + input.value);
-//         ws.send(input.value);
-//         return false;
-//     };
-//     document.getElementById("close").onclick = function(evt) {
-//         if (!ws) {
-//             return false;
-//         }
-//         ws.close();
-//         return false;
-//     };
-// });
-// </script>
-// </head>
-// <body>
-// <table>
-// <tr><td valign="top" width="50%">
-// <p>Click "Open" to create a connection to the server,
-// "Send" to send a message to the server and "Close" to close the connection.
-// You can change the message and send multiple times.
-// <p>
-// <form>
-// <button id="open">Open</button>
-// <button id="close">Close</button>
-// <p><input id="input" type="text" value="Hello world!">
-// <button id="send">Send</button>
-// </form>
-// </td><td valign="top" width="50%">
-// <div id="output"></div>
-// </td></tr></table>
-// </body>
-// </html>
-// `))
