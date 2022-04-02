@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var addr = flag.String("addr", "localhost:8008", "http service address")
+var addr = flag.String("addr", ":8008", "http service address")
 
 var upgrader = websocket.Upgrader{}
 
